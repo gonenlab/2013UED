@@ -1,0 +1,14 @@
+{
+    "imgsize" : 4096,        
+    "circrad" : 20,
+    "imgmaxres" : 2.01,
+    "reslimit" : 3.0,
+    "hrange" : 30,
+    "krange" : 30,
+    "lrange" : 30,
+    "aucvec" : [28.10672237,47.005545,-7.72205285],
+    "bucvec" : [-44.36131083,28.49151531,17.70802328],
+    "cucvec" : [-38.933103206,13.71934825,-103.90264167],
+    "beamstoprad" : 100,
+    "integrationthresh":0
+}  

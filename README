@@ -1,0 +1,164 @@
+*****************************************************
+Microcrystal Electron Diffraction Spot Indexing Suite 
+*****************************************************
+Matt Iadanza 2013-10-03
+
+This suite contains programs for indexing and measuring intensities of Bragg peaks from images obtained by diffraction of protein microcyrstals on a TEM.
+ls
+
+System Requirements
+===================
+
+Python 2.7 
+Tkinter
+PIL (including ImageTk)
+numpy
+imagemagick
+Gnuplot
+
+all testing was done on OsX 10.7.5 running unix kernel 11.4.2
+
+Procedure
+=========
+
+Create a working directory containing all of the micrographs.  All micrographs should be in 16 bit tiff format.  
+
+make necessary files
+--------------------
+
+1) Create an illustration file for each micrograph.  These files are in gif format and are used only for making illustrations.  They need to look good and have a more manageable file size than the actual micrographs.  Make a FIJI macro to do this.  Generally the micrographs need to be inverted and contrast enhanced ~ 4.0%.  Make sure they are the same size as the originals.  
+
+2) Create the file imagelist.txt using the following unix shell command:
+
+	ls *.tif > imagelist.txt
+
+
+edit params.json
+----------------
+use any text editor
+
+{
+    "imgsize" : 4096,        				## The image edge length  (pixels)
+    "circrad" : 20,					## Radius of circles used to integrate the spots (pixels)
+    "imgmaxres" : 2.01,					## Resolution at the edge of the image (Angstrom)
+    "reslimit" : 3.0,					## Resolution to calculate spots to (Angstrom)
+    "hrange" : 30,					## number of h miller indices to calculate 
+    "krange" : 30,					## number of k miller indices to calculate 
+    "lrange" : 30,					## number of l miller indices to calculate 
+    "aucvec" : [28.10672237,47.005545,-7.72205285],		## unit cell vectors - leave blank for now 
+    "bucvec" : [-44.36131083,28.49151531,17.70802328], 		## unit cell vectors - leave blank for now
+    "cucvec" : [-38.933103206,13.71934825,-103.90264167],	## unit cell vectors - leave blank for now
+    "beamstoprad" : 100,				## radius to be masked abound the beam stop (pixels) - be generous
+    "integrationthresh":0				## % above mean background a spot must be to be counted during integration
+}
+
+use cataspot to pick all of the micrographs
+-------------------------------------------
+Run cataspot with the following command at the shell prompt:
+
+python cataspot.py
+
+1) use File: Open Directory to get to the images.  The pending images section will be populated with the images.
+
+2) Double click an image to work on it.  When finished double click on the next image and the first will automatically be saved and moved to finished images.  The finished images can be reselected and continued at any time.  After finishing work an all images make sure to quit the program using File:Quit.  If this isn't done the last image worked on will not be saved.  
+
+The following data need to be entered for every image:
+
+* tilt angle: (degrees) use at least 1 sig fig after the decimal
+
+* centering reflections: pick at least 1 Fiedel pair for the  program to determine the center of the image.  More pairs picked will make it more accurate.
+
+* beamstop center: pick a single point.
+
+* reference points: These are the points the program uses to build the reference plane for spot prediction.  Pick two strong spots that represent full intensities.  If possible pick spots in the center of laue zones rather than on the edges.
+
+In addition 200 - 500 spots need to be picked for unit cell determination.  Use the 'spots' tool to pick these from several images at various tilts.  It is better to use images with lower tilt angles as these will give more accurate results.  Pick spots with strong intensities.
+
+
+rough cell dimensions estimation
+--------------------------------
+
+Run 1_find_lengths.py.
+This will also initialize log file.txt which will record all subsequent operations and some of their parameters.
+
+If the program fails to generate a plot type the command:
+
+gnuplot plot
+
+This generates a plot of the difference vector lengths called outgraph.eps.  Use this graph to get a rough estimate of the unit cell dimensions.  Identify the smallest values that have significant peaks.  magfreqs.csv can be imported into excel (open as space delimited) and examined to aid in this.  This process requires some user intuition and trial and error.  Examining patterns that hit major planes can also give some hints as to the unit cell dimensions.  For example Lysozyme generates large peaks for the a/b --> a/b difference vector (which corresponds to the a/b unit cell, 55 px on my detector), the a/d --> c vector (c unit cell, 112) and  a/b --> 2c (65, not a unit cell).  It is obvious from the lysozyme a/b major plane diffraction patterns that two unit cell are of approximately equal length.  For unknown unit cells this is going to require some trial and error.
+
+rough vector determination
+--------------------------
+
+Open 2_calc_ucvectors in a a text editor.
+enter the 6 values into the user entered variables section
+
+ea = 55.0       # expected a unit cell length (pixels)
+athresh = 1	# threshhold (pixels)
+eb = 55.0       # expected b unit cell length (pixels)
+bthresh = 1	# threshold (pixels)
+ec = 112.0      # expected c dimension	(pixels)
+cthresh = 1   	# threshold (pixels)
+
+save the file and run 2_calcucevectors.py.
+
+the program generates a list of up to 12 candidate vectors.  Generally there are three vectors with significantly higher scores these are the most likely unit cell vectors.  If the results are ambiguous go back and pick more spots and/or modify the expected unit cell lengths and/or thresholds.
+
+Take the three best vectors and enter them in to params.json.  make sure to use the format:
+
+[28.10672237,47.005545,-7.72205285]
+
+initial indexing
+----------------
+Run 3_spot_index.py.  This generates a gif image (rootname_spots.gif) and raw data file (rootname_spots.csv) for each image.  Examine the images, make sure the spots are reasonable.  They don't have to be perfect as they will be refined later in the process.
+
+spot refinement
+----------
+
+Run 4_refine_spots.py.
+this generates a gif image (rootname_refine_spots.gif), raw data file (rootname_spots_r.csv), and logfile (rootname_spotrefinement_raw.txt) for each image.  Blue circles represent the original predicted spots and yellow circles the refined spots.  Examine the images, The spots should have improved.  There will be many false positives (circle where there is no spot), but these will be eliminated later.
+
+indexing for vector refinement
+--------------------------------
+Run 5_UCR_index.py.  This generates a gif image (rootname_ucr_spots.gif) for each file showing the spots that will be used for the next round of unit cell vector determination and a single spotlist file (refined.txt).
+
+calculate refined vectors
+-------------------------
+
+Open 6_recalculate_vectors.py in a text editor and edit the user entered variables:
+
+ea = 55.0       # expected a unit cell length (pixels)
+athresh = 1	# threshhold (pixels)
+eb = 55.0       # expected b unit cell length (pixels)
+bthresh = 1	# threshold (pixels)
+ec = 112.0      # expected c dimension	(pixels)
+cthresh = 1   	# threshold (pixels)
+
+Run 6_recalculate_vectors.py.  Pick the best vectors generated and enter them into params.json.
+
+iterate
+-------
+
+Now that the vectors have been updated rerun 3_spot_index.py, 4_refine_spots.py, 5_UCR_index.py, and 6_recalculate_vectors.py.  Put the new vectors in params.json and repeat.  Continue to do this until the vectors have stabilized and are satisfactory.  
+  
+
+integration
+-----------
+
+run 3_index_spots.py one final time then run 7_measure_intensities.py.  This will generate combine.txt which contains intensity measurements from all of the images.  
+
+merge
+-----
+
+Use of of the two merging programs to merge symmetry related reflections.  Currently these programs are only written for p422 symmetry and will need to be modified to accommodate other symmetries.
+
+the _maxonly version assumes only the highest intensity for each spot actually represents the full intensity and discards all partial intensities.
+the _thresh version allows the user to set a threshold (t-factor) which keeps reflections within x% of the largest value.  t-factor is essentially the largest allowable Rmerge where: maxRmerge = 1-tfactor  
+
+both programs out put the file f_mergedint.txt which can be used to create a mtz file using ccp4's 'convert to /modify/extend mtz' function.
+f_merget.txt contains the following columns:
+
+H,K,L,F,SIGF,I,SIGI 
+
+the fortran format of the output is supposed to be'(I2,1X,I2,1X,I2,1X,F12.4,1X,F12.4,1X,F12.4,1X,F12.4)' but ccp4 does not seem to interpret it correctly.  The test data set worked with the following fortran format '(F3.0,F3.0,F3.0,1X,F12.4,F12.4,F18.4,F16.4)'.  Make sure to cross check the values in the mtz file with those in f_mergedint.txt to make sure ccp4 interpreted the file correctly!
+
