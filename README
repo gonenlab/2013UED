@@ -4,7 +4,6 @@ Microcrystal Electron Diffraction Spot Indexing Suite
 Matt Iadanza 2013-10-03
 
 This suite contains programs for indexing and measuring intensities of Bragg peaks from images obtained by diffraction of protein microcyrstals on a TEM.
-ls
 
 System Requirements
 ===================
