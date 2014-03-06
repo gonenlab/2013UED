@@ -101,17 +101,17 @@ for each in lines:
             k = k*-1
         if l < 0:
             l = l*-1
-        spotint[(k,h,l)].append(data[5])
+        spotint[(k,h,l)].append(float(data[5]))
     if k == 0 and h != 0:
         if h < 0:
             h = h*-1
         if l < 0:
             l = l*-1
-        spotint[(h,k,l)].append(data[5])
+        spotint[(h,k,l)].append(float(data[5]))
     if k == 0 and h == 0:
         if l < 0:
             l = l *-1
-        spotint[(h,k,l)].append(data[5])
+        spotint[(h,k,l)].append(float(data[5]))
         
 ## go over spotint dict and remove any entries with no intensity values
 
